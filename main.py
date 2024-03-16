@@ -86,8 +86,6 @@ async def get_scrobbles(interaction: discord.Interaction, user: str):
         await interaction.followup.send('Error: AttrubuteError')
 
 
-
-
 @bot.tree.command(name='roll',
                   description='Сгенерировать рандомное число в указанном промежутке. Пример использования: /roll 0-100')
 async def random_digit(interaction: discord.Interaction, range: str):
