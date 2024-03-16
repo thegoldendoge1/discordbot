@@ -83,8 +83,7 @@ async def get_scrobbles(interaction: discord.Interaction, user: str):
         await interaction.followup.send(embed=embed)
 
     except AttributeError:
-        await interaction.followup.send('Ошибка, вероятно вы неправильно ввели юзернейм пользователя last.fm либо у пользователя'
-                                        ' скрыты прослушивания')
+        await interaction.followup.send('Error: AttrubuteError')
 
 
 
