@@ -52,38 +52,74 @@ async def get_scrobbles(interaction: discord.Interaction, user: str):
     page = requests.get(url)
     soup = BeautifulSoup(page.text, features='html.parser')
 
+    # Попытка получения информации и обработка возможных исключений
     try:
         # Получение количества скробблов
-        scrobbles_element = soup.find('div', class_='header-metadata-display').find('a')
-        if scrobbles_element.text:
-            scrobbles = scrobbles_element.text
-        else:
-            scrobbles = 'Неудалось получить информацию о прослушиваниях'
-        # Получение информации с last.fm
-        tracks = soup.find_all('tr', class_='chartlist-row')
-        avatar_url = soup.find('div', class_='header-avatar').find('img')['src']
-        current_top_track = soup.find('a', 'featured-item-name')
-        current_top_executor = soup.find('a', 'featured-item-artist')
+        try:
+            scrobbles_element = soup.find('div', class_='header-metadata-display').find('a')
+            scrobbles = scrobbles_element.text if scrobbles_element else 'Не удалось получить информацию о прослушиваниях'
+        except AttributeError:
+            scrobbles = 'Не удалось получить информацию о прослушиваниях'
+
+        # Получение информации о треках
+        try:
+            tracks = soup.find_all('tr', class_='chartlist-row')
+            if not tracks:
+                raise AttributeError
+        except AttributeError:
+            tracks = 'Не удалось получить информацию о треках'
+
+        try:
+            avatar_url = soup.find('div', class_='header-avatar').find('img')['src']
+        except AttributeError:
+            avatar_url = None
+
+        try:
+            current_top_track = soup.find('a', 'featured-item-name').text
+        except AttributeError:
+            current_top_track = 'Не удалось получить информацию'
+
+        try:
+            current_top_executor = soup.find('a', 'featured-item-artist').text
+        except AttributeError:
+            current_top_executor = 'Не удалось получить информацию'
+
+        # Получение последних скробблов
         recent_scrobbles = []
         for track in tracks[:5]:  # Получить только последние 5 скробблов
-            track_info = track.find('td', class_='chartlist-name').get_text(strip=True)
-            artist = track.find('td', class_='chartlist-artist').get_text(strip=True)
-            time = track.find('td', class_='chartlist-timestamp').get_text(strip=True)
-            recent_scrobbles.append(f'**{artist}** - {track_info} ({time})')
+            try:
+                track_info = track.find('td', class_='chartlist-name').get_text(strip=True)
+                artist = track.find('td', class_='chartlist-artist').get_text(strip=True)
+                time = track.find('td', class_='chartlist-timestamp').get_text(strip=True)
+                recent_scrobbles.append(f'**{artist}** - {track_info} ({time})')
+            except AttributeError:
+                continue
 
         # Создание встроенного сообщения (embed)
         embed = discord.Embed(title=f'Информация о скробблах пользователя {user}',
-                      description=f'Количество прослушиваний на Last.fm: **{scrobbles}**\n'
-                                  f'Топ композиция: **{current_top_executor.text}** - {current_top_track.text}',
-                      color=discord.Color.blue())
-        embed.set_thumbnail(url=avatar_url)
-        embed.add_field(name='Последние скробблы:', value='\n'.join(recent_scrobbles), inline=False)
+                              color=discord.Color.blue())
+
+        if current_top_track != 'Не удалось получить информацию' and current_top_executor != 'Не удалось получить информацию':
+            embed.description = f'Количество прослушиваний на Last.fm: **{scrobbles}**\nТоп композиция: **{current_top_executor}** - {current_top_track}'
+        elif current_top_track == 'Не удалось получить информацию' and current_top_executor != 'Не удалось получить информацию':
+            embed.description = f'Количество прослушиваний на Last.fm: **{scrobbles}**\nТоп исполнитель: **{current_top_executor}**'
+        elif current_top_track != 'Не удалось получить информацию' and current_top_executor == 'Не удалось получить информацию':
+            embed.description = f'Количество прослушиваний на Last.fm: **{scrobbles}**\nТоп композиция: **{current_top_track}**'
+        else:
+            embed.description = f'Количество прослушиваний на Last.fm: **{scrobbles}**\nНе удалось получить информацию о топ композиции'
+
+        if avatar_url:
+            embed.set_thumbnail(url=avatar_url)
+
+        embed.add_field(name='Последние скробблы:', value='\n'.join(recent_scrobbles) if recent_scrobbles else 'Нет данных', inline=False)
 
         # Отправка встроенного сообщения (embed)
         await interaction.followup.send(embed=embed)
 
-    except AttributeError:
-        await interaction.followup.send('Error: AttrubuteError')
+    except Exception as e:
+        await interaction.followup.send(f'Произошла ошибка: {e}')
+
+
 
 
 @bot.tree.command(name='roll',
