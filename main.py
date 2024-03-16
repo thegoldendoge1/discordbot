@@ -7,8 +7,8 @@ import os
 import settings
 import random
 from yt_dlp import YoutubeDL
-from time import sleep
 import aiohttp
+import asyncio
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='>', intents=intents)
@@ -120,8 +120,6 @@ async def get_scrobbles(interaction: discord.Interaction, user: str):
         await interaction.followup.send(f'Произошла ошибка: {e}')
 
 
-
-
 @bot.tree.command(name='roll',
                   description='Сгенерировать рандомное число в указанном промежутке. Пример использования: /roll 0-100')
 async def random_digit(interaction: discord.Interaction, range: str):
@@ -164,10 +162,10 @@ async def get_audio_from_link(url: str):
 
 # TODO: сделать проверку на уже подключенного бота к серверу
 
-
+voice_client = None
 @bot.tree.command(name='play', description='Проиграть трек по ссылке')
 async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
-    voice_client = None
+    global voice_client
     if interaction.user.voice:
         await interaction.response.defer()
         track_info = await get_audio_from_link(url)
@@ -214,7 +212,19 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
 
 @bot.tree.command(name='pause', description='Поставить на паузу воспроизведение текущего трека')
 async def pause_current_track(interaction: discord.Interaction):
-    pass
+    global voice_client
+    if voice_client and voice_client.is_playing():
+        voice_client.pause()
+        await interaction.response.send_message('Трек поставлен на паузу')
+        await asyncio.sleep(10)
+        await interaction.delete_original_response()
+    elif voice_client and voice_client.is_paused:
+        voice_client.resume()
+        await interaction.response.send_message('Трек снят с паузы')
+        await asyncio.sleep(10)
+        await interaction.delete_original_response()
+    else:
+        await interaction.response.send_message('Сейчас ничего не играет')
 
 
 bot.run(os.getenv('TOKEN'))
