@@ -33,6 +33,7 @@ async def on_member_join(member):
     if welcome_channel:
         await welcome_channel.send(embed=embed)
 
+
 # Тестирование присоединения участника к серверу
 # @bot.command()
 # async def test_join(ctx):
@@ -41,8 +42,6 @@ async def on_member_join(member):
 #     guild = bot.get_guild(guild_id)
 #     member = guild.get_member(member_id)
 #     await on_member_join(member)
-
-# TODO: сделать проверку на каждый реквест (если например у пользователя нет топ трека то будет ошибка)
 
 
 @bot.tree.command(name='lastfm', description='Информация о скробблах пользователя last.fm')
@@ -111,7 +110,8 @@ async def get_scrobbles(interaction: discord.Interaction, user: str):
         if avatar_url:
             embed.set_thumbnail(url=avatar_url)
 
-        embed.add_field(name='Последние скробблы:', value='\n'.join(recent_scrobbles) if recent_scrobbles else 'Нет данных', inline=False)
+        embed.add_field(name='Последние скробблы:',
+                        value='\n'.join(recent_scrobbles) if recent_scrobbles else 'Нет данных', inline=False)
 
         # Отправка встроенного сообщения (embed)
         await interaction.followup.send(embed=embed)
@@ -160,9 +160,10 @@ async def get_audio_from_link(url: str):
         else:
             return None
 
-# TODO: сделать проверку на уже подключенного бота к серверу
 
-voice_client = None
+voice_client = None  # для паузы, не трогай блять!
+
+
 @bot.tree.command(name='play', description='Проиграть трек по ссылке')
 async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
     global voice_client
@@ -187,8 +188,8 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
         ffmpeg_options = {
             'options': '-vn',
             'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'format': 'flac',  # Использование формата без потерь
-            'ar': 48000,  # Увеличение частоты дискретизации
+            'format': 'flac',
+            'ar': 48000,
             'ac': 2
         }
 
@@ -201,7 +202,7 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
             is_playing_now = True
 
             embed = discord.Embed(description=f'**{track_title}**\n'
-                                          f'Длительность: {track_duration}')
+                                              f'Длительность: {track_duration}')
             embed.set_author(name='Сейчас играет:')
             embed.set_thumbnail(url=track_thumbnail)
             await interaction.followup.send(embed=embed)
@@ -210,7 +211,8 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-@bot.tree.command(name='pause', description='Поставить на паузу воспроизведение текущего трека')
+@bot.tree.command(name='pause', description='Поставить на паузу текущий трек (Чтобы убрать паузу, пропишите команду '
+                                            'повторно')
 async def pause_current_track(interaction: discord.Interaction):
     global voice_client
     if voice_client and voice_client.is_playing():

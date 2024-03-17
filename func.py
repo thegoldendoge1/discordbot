@@ -8,3 +8,5 @@ def format_duration(duration_seconds):
     minutes = duration_seconds // 60
     seconds = duration_seconds % 60
     return f"{minutes}:{seconds:02d}"
+
+
