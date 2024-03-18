@@ -10,6 +10,7 @@ from yt_dlp import YoutubeDL
 import aiohttp
 import asyncio
 
+
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='>', intents=intents)
 
@@ -212,7 +213,7 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
 
 
 @bot.tree.command(name='pause', description='Поставить на паузу текущий трек (Чтобы убрать паузу, пропишите команду '
-                                            'повторно')
+                                            'повторно1')
 async def pause_current_track(interaction: discord.Interaction):
     global voice_client
     if voice_client and voice_client.is_playing():
@@ -227,6 +228,25 @@ async def pause_current_track(interaction: discord.Interaction):
         await interaction.delete_original_response()
     else:
         await interaction.response.send_message('Сейчас ничего не играет')
+
+ranks = {} # {user_id: xp}
+
+
+@bot.tree.command(name='rank', description='current test command')
+async def get_rank_user(interaction: discord.Interaction):
+    global ranks
+    user_id = interaction.user.id
+    await interaction.response.send_message(f'Current messages: {ranks[user_id]}')
+
+
+@bot.event
+async def on_message(message):
+    global ranks
+    user_id = message.author.id
+    if user_id in ranks:
+        ranks[user_id] += 1
+    else:
+        ranks[user_id] = 1
 
 
 bot.run(os.getenv('TOKEN'))
