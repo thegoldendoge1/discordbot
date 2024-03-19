@@ -213,7 +213,7 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
 
 
 @bot.tree.command(name='pause', description='Поставить на паузу текущий трек (Чтобы убрать паузу, пропишите команду '
-                                            'повторно1')
+                                            'повторно')
 async def pause_current_track(interaction: discord.Interaction):
     global voice_client
     if voice_client and voice_client.is_playing():
@@ -232,10 +232,12 @@ async def pause_current_track(interaction: discord.Interaction):
 ranks = {} # {user_id: xp}
 
 
-@bot.tree.command(name='rank', description='current test command')
+@bot.tree.command(name='rank', description='current test commands')
 async def get_rank_user(interaction: discord.Interaction):
     global ranks
     user_id = interaction.user.id
+    if user_id not in ranks:
+        ranks[user_id] = 0
     await interaction.response.send_message(f'Current messages: {ranks[user_id]}')
 
 
@@ -243,10 +245,24 @@ async def get_rank_user(interaction: discord.Interaction):
 async def on_message(message):
     global ranks
     user_id = message.author.id
-    if user_id in ranks:
+    if user_id in ranks and user_id != 828149684123336734: # не добавляет в ранги самого себя :)
         ranks[user_id] += 1
-    else:
-        ranks[user_id] = 1
+    elif user_id not in ranks and user_id != 828149684123336734: # не добавляет в ранги самого себя :)
+        ranks[user_id] = 0
+
+
+@bot.tree.command(name='debug_ranks', description='debug1')
+async def send_ranks(interacion: discord.Interaction):
+    global ranks
+    await interacion.response.send_message(ranks)
+
+
+@bot.tree.command(name='leaderboard', description='хуй знает')
+async def send_leaderboard(interaction: discord.Interaction):
+    global ranks
+    sorted_ranks = dict(sorted(ranks.items(), key=lambda item: item[1], reverse=True)) # сортировка по убыванию рангов
+    leaderboard = '\n'.join([f'{bot.get_user(user_id)} - {score}' for user_id, score in sorted_ranks.items()])
+    await interaction.response.send_message(leaderboard)
 
 
 bot.run(os.getenv('TOKEN'))
