@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import func
 import discord
+from discord import Spotify
 from discord.ext import commands
 import os
 import settings
@@ -10,8 +11,8 @@ from yt_dlp import YoutubeDL
 import aiohttp
 import asyncio
 
-
 intents = discord.Intents.all()
+intents.message_content = True
 bot = commands.Bot(command_prefix='>', intents=intents)
 
 
@@ -43,6 +44,31 @@ async def on_member_join(member):
 #     guild = bot.get_guild(guild_id)
 #     member = guild.get_member(member_id)
 #     await on_member_join(member)
+
+
+@bot.tree.command(name='spotify')
+async def spotify(interaction: discord.Interaction, user: discord.Member = None):
+    if user == None:
+        user = interaction.message.author
+        print(f'User = {user}')
+        pass
+    if user.activities:
+        for activity in user.activities:
+            if isinstance(activity, Spotify):
+                embed = discord.Embed(
+                    title=f"{user.name}'s Spotify",
+                    description="Listening to {}".format(activity.title),
+                    color=0xC902FF)
+                embed.set_thumbnail(url=activity.album_cover_url)
+                embed.add_field(name="Artist", value=activity.artist)
+                embed.add_field(name="Album", value=activity.album)
+                embed.set_footer(text="Song started at {}".format(activity.created_at.strftime("%H:%M")))
+                await interaction.response.send_message(embed=embed)
+
+
+@bot.command()
+async def ping(ctx):
+    await ctx.send('pong')
 
 
 @bot.tree.command(name='lastfm', description='Информация о скробблах пользователя last.fm')
@@ -229,10 +255,11 @@ async def pause_current_track(interaction: discord.Interaction):
     else:
         await interaction.response.send_message('Сейчас ничего не играет')
 
-ranks = {} # {user_id: xp}
+
+ranks = {}  # {user_id: xp}
 
 
-@bot.tree.command(name='rank', description='current test commands')
+@bot.tree.command(name='rank', description='current test comman1231231ds')
 async def get_rank_user(interaction: discord.Interaction):
     global ranks
     user_id = interaction.user.id
@@ -245,24 +272,28 @@ async def get_rank_user(interaction: discord.Interaction):
 async def on_message(message):
     global ranks
     user_id = message.author.id
-    if user_id in ranks and user_id != 828149684123336734: # не добавляет в ранги самого себя :)
+    if user_id in ranks and user_id != bot.user.id:  # Проверка, что сообщение не от бота
         ranks[user_id] += 1
-    elif user_id not in ranks and user_id != 828149684123336734: # не добавляет в ранги самого себя :)
+    elif user_id not in ranks and user_id != bot.user.id:  # Проверка, что сообщение не от бота
         ranks[user_id] = 0
 
+    await bot.process_commands(message)  # Обработка команд
 
-@bot.tree.command(name='debug_ranks', description='debug1')
+
+@bot.tree.command(name='debug_ranks', description='debug')
 async def send_ranks(interacion: discord.Interaction):
     global ranks
     await interacion.response.send_message(ranks)
 
 
-@bot.tree.command(name='leaderboard', description='хуй знает')
+@bot.tree.command(name='leaderboard', description='Показывает список участников с наибольшим рангом')
 async def send_leaderboard(interaction: discord.Interaction):
     global ranks
-    sorted_ranks = dict(sorted(ranks.items(), key=lambda item: item[1], reverse=True)) # сортировка по убыванию рангов
-    leaderboard = '\n'.join([f'{bot.get_user(user_id)} - {score}' for user_id, score in sorted_ranks.items()])
-    await interaction.response.send_message(leaderboard)
+    sorted_ranks = dict(sorted(ranks.items(), key=lambda item: item[1], reverse=True))  # сортировка по убыванию рангов
+    leaderboard = '\n'.join(
+        [f'**{bot.get_user(user_id)}** - **{score}** messages' for user_id, score in sorted_ranks.items()])
+    embed = discord.Embed(title='Таблица лидеров по рангу', description=leaderboard, colour=8811470)
+    await interaction.response.send_message(embed=embed)
 
 
 bot.run(os.getenv('TOKEN'))
