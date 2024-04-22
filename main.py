@@ -1,8 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-import func
+import utils
 import discord
-from discord import Spotify
 from discord.ext import commands
 import os
 import settings
@@ -10,6 +9,8 @@ import random
 from yt_dlp import YoutubeDL
 import aiohttp
 import asyncio
+import csv
+
 
 intents = discord.Intents.all()
 intents.message_content = True
@@ -19,8 +20,8 @@ bot = commands.Bot(command_prefix='>', intents=intents)
 @bot.event
 async def on_ready():
     synced = await bot.tree.sync()
-    func.log(f'Successfully logged in as {bot.user}')
-    func.log(f'synced {len(synced)} command(s)')
+    utils.log(f'Successfully logged in as {bot.user}')
+    utils.log(f'synced {len(synced)} command(s)')
 
 
 @bot.event
@@ -44,26 +45,6 @@ async def on_member_join(member):
 #     guild = bot.get_guild(guild_id)
 #     member = guild.get_member(member_id)
 #     await on_member_join(member)
-
-
-@bot.tree.command(name='spotify')
-async def spotify(interaction: discord.Interaction, user: discord.Member = None):
-    if user == None:
-        user = interaction.message.author
-        print(f'User = {user}')
-        pass
-    if user.activities:
-        for activity in user.activities:
-            if isinstance(activity, Spotify):
-                embed = discord.Embed(
-                    title=f"{user.name}'s Spotify",
-                    description="Listening to {}".format(activity.title),
-                    color=0xC902FF)
-                embed.set_thumbnail(url=activity.album_cover_url)
-                embed.add_field(name="Artist", value=activity.artist)
-                embed.add_field(name="Album", value=activity.album)
-                embed.set_footer(text="Song started at {}".format(activity.created_at.strftime("%H:%M")))
-                await interaction.response.send_message(embed=embed)
 
 
 @bot.command()
@@ -187,8 +168,7 @@ async def get_audio_from_link(url: str):
         else:
             return None
 
-
-voice_client = None  # для паузы, не трогай блять!
+voice_client = None
 
 
 @bot.tree.command(name='play', description='Проиграть трек по ссылке')
@@ -202,7 +182,7 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
             track_url = track_info.get('url')
             track_title = track_info.get('fulltitle')
             track_thumbnail = track_info.get('thumbnail')
-            track_duration = func.format_duration(track_info.get('duration'))
+            track_duration = utils.format_duration(track_info.get('duration'))
 
         # Подключение к голосовому каналу
         channel = interaction.user.voice.channel
@@ -214,8 +194,8 @@ async def connect_to_voice_channel(interaction: discord.Interaction, url: str):
         # Воспроизведение трека
         ffmpeg_options = {
             'options': '-vn',
-            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'format': 'flac',
+            'before_options': '-reconnect 5 -reconnect_streamed 5 -reconnect_delay_max 5',
+            'format': 'mp3',
             'ar': 48000,
             'ac': 2
         }
@@ -270,23 +250,16 @@ async def get_rank_user(interaction: discord.Interaction):
 
 @bot.event
 async def on_message(message):
-    global ranks
+    FILENAME = 'ranks.csv'
     user_id = message.author.id
-    if user_id in ranks and user_id != bot.user.id:  # Проверка, что сообщение не от бота
-        ranks[user_id] += 1
-    elif user_id not in ranks and user_id != bot.user.id:  # Проверка, что сообщение не от бота
-        ranks[user_id] = 0
-
+    table = [str(user_id), '1231']
+    with open(FILENAME, 'a+', newline='') as ranks_file:
+        writer = csv.writer(ranks_file)
+        writer.writerows(table)
     await bot.process_commands(message)  # Обработка команд
 
 
-@bot.tree.command(name='debug_ranks', description='debug')
-async def send_ranks(interacion: discord.Interaction):
-    global ranks
-    await interacion.response.send_message(ranks)
-
-
-@bot.tree.command(name='leaderboard', description='Показывает список участников с наибольшим рангом')
+@bot.tree.command(name='leaderboard', description='Показывает список участников с наибольшим рангом.')
 async def send_leaderboard(interaction: discord.Interaction):
     global ranks
     sorted_ranks = dict(sorted(ranks.items(), key=lambda item: item[1], reverse=True))  # сортировка по убыванию рангов
