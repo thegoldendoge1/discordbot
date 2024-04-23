@@ -225,9 +225,9 @@ async def on_message(message):
             user_data = {}
     if user_id in user_data:
         user_data[user_id] += 1
-        print("User_id найден!")
+        utils.log(f"XP user {user_id} + 1!")
     else:
-        print("User_id не найден!")
+        utils.log(f"New user {user_id} added!")
         user_data[user_id] = 1
 
     with open(filename, "w+", encoding="utf-8") as file:
