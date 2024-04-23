@@ -7,7 +7,6 @@ import os
 import settings
 import random
 from yt_dlp import YoutubeDL
-import aiohttp
 import asyncio
 import csv
 
@@ -26,6 +25,7 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member):
+    # TODO добавить отправление рандомной картинки в приветствии
     welcome_channel_id = 888701342447718420
     welcome_channel = bot.get_channel(welcome_channel_id)
     embed = discord.Embed(title=f'Добро пожаловать, {member}',
@@ -128,34 +128,6 @@ async def get_scrobbles(interaction: discord.Interaction, user: str):
         await interaction.followup.send(f'Произошла ошибка: {e}')
 
 
-@bot.tree.command(name='roll',
-                  description='Сгенерировать рандомное число в указанном промежутке. Пример использования: /roll 0-100')
-async def random_digit(interaction: discord.Interaction, range: str):
-    try:
-        list_of_range = range.split('-')
-        if len(list_of_range) == 2:
-            random_choise = random.randint(int(list_of_range[0]), int(list_of_range[1]))
-            await interaction.response.send_message(f'Рандомное число из диапозона {range}: **{random_choise}**')
-        else:
-            await interaction.response.send_message(
-                "Неправильный синтаксис команды. Введите диапазон в формате **['Число'-'Число']**\n"
-                "Например: **0-100**\n")
-
-    except Exception as e:
-        await interaction.response.send_message(
-            "Неправильный синтаксис команды. Введите диапазон в формате **['Число'-'Число']**\n"
-            "Например: **0-100**\n"
-            "\n"
-            f"Ошибка: {e}")
-
-
-@bot.tree.command(name='random_choice', description='Перечислите через запятую список элементов для выбора')
-async def random_choice_from_list(interaction: discord.Interaction, list: str):
-    string_without_spaces = list.replace(' ', '')
-    converted_list = string_without_spaces.split(',')
-    await interaction.response.send_message(f'Рандомный элемент из списка: **{random.choice(converted_list)}**')
-
-
 async def get_audio_from_link(url: str):
     ydl_options = {
         'format': 'bestaudio/best',
@@ -236,37 +208,16 @@ async def pause_current_track(interaction: discord.Interaction):
         await interaction.response.send_message('Сейчас ничего не играет')
 
 
-ranks = {}  # {user_id: xp}
-
-
-@bot.tree.command(name='rank', description='current test comman1231231ds')
-async def get_rank_user(interaction: discord.Interaction):
-    global ranks
-    user_id = interaction.user.id
-    if user_id not in ranks:
-        ranks[user_id] = 0
-    await interaction.response.send_message(f'Current messages: {ranks[user_id]}')
-
-
 @bot.event
 async def on_message(message):
+    """Для корректной работы рангов"""
     FILENAME = 'ranks.csv'
     user_id = message.author.id
     table = [str(user_id), '1231']
     with open(FILENAME, 'a+', newline='') as ranks_file:
         writer = csv.writer(ranks_file)
         writer.writerows(table)
-    await bot.process_commands(message)  # Обработка команд
-
-
-@bot.tree.command(name='leaderboard', description='Показывает список участников с наибольшим рангом.')
-async def send_leaderboard(interaction: discord.Interaction):
-    global ranks
-    sorted_ranks = dict(sorted(ranks.items(), key=lambda item: item[1], reverse=True))  # сортировка по убыванию рангов
-    leaderboard = '\n'.join(
-        [f'**{bot.get_user(user_id)}** - **{score}** messages' for user_id, score in sorted_ranks.items()])
-    embed = discord.Embed(title='Таблица лидеров по рангу', description=leaderboard, colour=8811470)
-    await interaction.response.send_message(embed=embed)
+    await bot.process_commands(message)
 
 
 bot.run(os.getenv('TOKEN'))
