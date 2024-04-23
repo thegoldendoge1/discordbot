@@ -9,7 +9,7 @@ import random
 from yt_dlp import YoutubeDL
 import asyncio
 import csv
-
+import json
 
 intents = discord.Intents.all()
 intents.message_content = True
@@ -140,6 +140,7 @@ async def get_audio_from_link(url: str):
         else:
             return None
 
+
 voice_client = None
 
 
@@ -210,13 +211,28 @@ async def pause_current_track(interaction: discord.Interaction):
 
 @bot.event
 async def on_message(message):
-    """Для корректной работы рангов"""
-    FILENAME = 'ranks.csv'
-    user_id = message.author.id
-    table = [str(user_id), '1231']
-    with open(FILENAME, 'a+', newline='') as ranks_file:
-        writer = csv.writer(ranks_file)
-        writer.writerows(table)
+    server_id = message.guild.id
+    user_id = f'{message.author.id}'
+    filename = f"./ranks/{server_id}.json"
+    try:
+        file = open(filename, 'r+')
+    except IOError:
+        file = open(filename, 'w+')
+    with open(filename, "r+", encoding="utf-8") as file:
+        try:
+            user_data = json.load(file)
+        except:
+            user_data = {}
+    if user_id in user_data:
+        user_data[user_id] += 1
+        print("User_id найден!")
+    else:
+        print("User_id не найден!")
+        user_data[user_id] = 1
+
+    with open(filename, "w+", encoding="utf-8") as file:
+        json.dump(user_data, file)
+
     await bot.process_commands(message)
 
 
