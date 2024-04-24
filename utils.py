@@ -1,4 +1,5 @@
 import datetime
+import json
 
 
 def log(message):
@@ -11,3 +12,27 @@ def format_duration(duration_seconds):
     minutes = duration_seconds // 60
     seconds = duration_seconds % 60
     return f"{minutes}:{seconds:02d}"
+
+
+def add_xp(*, server_id: int, user_id: int, is_bot: bool, xp: int) -> None:
+    user_id = str(user_id)
+    filename = f"./ranks/{server_id}.json"
+    try:
+        file = open(filename, 'r+')
+    except IOError:
+        file = open(filename, 'w+')
+    with open(filename, "r+", encoding="utf-8") as file:
+        try:
+            user_data = json.load(file)
+        except:
+            user_data = {}
+    if user_id in user_data and not is_bot:
+        user_data[user_id] += xp
+        log(f"XP user {user_id} + {xp}")
+    elif user_id not in user_data and not is_bot:
+        log(f"New user {user_id} added!")
+        user_data[user_id] = 0
+
+    with open(filename, "w+", encoding="utf-8") as file:
+        json.dump(user_data, file)
+

@@ -212,30 +212,17 @@ async def pause_current_track(interaction: discord.Interaction):
 @bot.event
 async def on_message(message):
     server_id = message.guild.id
-    user_id = f'{message.author.id}'
+    user_id = message.author.id
     get_user = bot.get_user(int(user_id))
     is_bot = get_user.bot
-    filename = f"./ranks/{server_id}.json"
-    try:
-        file = open(filename, 'r+')
-    except IOError:
-        file = open(filename, 'w+')
-    with open(filename, "r+", encoding="utf-8") as file:
-        try:
-            user_data = json.load(file)
-        except:
-            user_data = {}
-    if user_id in user_data and not is_bot:
-        user_data[user_id] += 1
-        utils.log(f"XP user {user_id} + 1!")
-    elif user_id not in user_data and not is_bot:
-        utils.log(f"New user {user_id} added!")
-        user_data[user_id] = 1
-
-    with open(filename, "w+", encoding="utf-8") as file:
-        json.dump(user_data, file)
-
+    utils.add_xp(server_id=server_id, user_id=user_id, is_bot=is_bot, xp=1)
     await bot.process_commands(message)
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if after.channel is not None:
+        utils.add_xp(server_id=member.guild.id, user_id=member.id, is_bot=member.bot, xp=10)
 
 
 @bot.tree.command(name='leaderboard', description='Лидерборд активных участников')
