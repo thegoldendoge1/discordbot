@@ -213,16 +213,16 @@ async def pause_current_track(interaction: discord.Interaction):
 async def on_message(message):
     server_id = message.guild.id
     user_id = message.author.id
-    get_user = bot.get_user(int(user_id))
-    is_bot = get_user.bot
-    utils.add_xp(server_id=server_id, user_id=user_id, is_bot=is_bot, xp=1)
+    user = bot.get_user(int(user_id))
+    utils.add_xp(user=user, server_id=server_id, xp=1)
     await bot.process_commands(message)
 
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    # TODO: добавить таймаут на добавление xp
     if after.channel is not None:
-        utils.add_xp(server_id=member.guild.id, user_id=member.id, is_bot=member.bot, xp=10)
+        utils.add_xp(user=member, server_id=member.guild.id, xp=5)
 
 
 @bot.tree.command(name='leaderboard', description='Лидерборд активных участников')

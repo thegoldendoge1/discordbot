@@ -14,7 +14,9 @@ def format_duration(duration_seconds):
     return f"{minutes}:{seconds:02d}"
 
 
-def add_xp(*, server_id: int, user_id: int, is_bot: bool, xp: int) -> None:
+def add_xp(*, user, server_id, xp: int) -> None:
+    user_id = user.id
+    is_bot = user.bot
     user_id = str(user_id)
     filename = f"./ranks/{server_id}.json"
     try:
@@ -34,5 +36,4 @@ def add_xp(*, server_id: int, user_id: int, is_bot: bool, xp: int) -> None:
         user_data[user_id] = 0
 
     with open(filename, "w+", encoding="utf-8") as file:
-        json.dump(user_data, file)
-
+        json.dump(user_data, file, indent=4)
