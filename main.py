@@ -238,20 +238,31 @@ async def on_message(message):
 
 @bot.tree.command(name='leaderboard', description='Лидерборд активных участников')
 async def leaderboard(interaction: discord.Interaction):
+    # TODO: починить сортировку
     server_id = interaction.guild.id
     filename = f"./ranks/{server_id}.json"
     leaderboard_data = []
+    try:
+        file = open(filename, 'r+')
+    except IOError:
+        file = open(filename, 'w+')
     with open(filename, "r+", encoding="utf-8") as file:
-        user_data = json.load(file)
-        for user in user_data:
-            user_id = bot.get_user(int(user))
-            xp = user_data[user]
-            leaderboard_data.append(f"**{user_id.name}** - {xp} xp")
-        leaderboard_data.sort()
-        embed = discord.Embed(title='Лидерборд активных участников',
-                              description='\n'.join(leaderboard_data),
-                              colour=discord.Color.blue())
-        await interaction.response.send_message(embed=embed)
+        try:
+            user_data = json.load(file)
+            for user in user_data:
+                user_id = bot.get_user(int(user))
+                xp = user_data[user]
+                leaderboard_data.append(f"**{user_id.name}** - {xp} xp")
+            leaderboard_data.sort()
+            embed = discord.Embed(title='Лидерборд активных участников',
+                                  description='\n'.join(leaderboard_data),
+                                  colour=discord.Color.blue())
+            await interaction.response.send_message(embed=embed)
+        except:
+            embed = discord.Embed(title='Лидерборд активных участников',
+                                  description='Лидерборд пока пуст :(',
+                                  colour=discord.Color.blue())
+            await interaction.response.send_message(embed=embed)
 
 
 bot.run(os.getenv('TOKEN'))
