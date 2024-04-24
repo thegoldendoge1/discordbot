@@ -213,6 +213,8 @@ async def pause_current_track(interaction: discord.Interaction):
 async def on_message(message):
     server_id = message.guild.id
     user_id = f'{message.author.id}'
+    get_user = bot.get_user(int(user_id))
+    is_bot = get_user.bot
     filename = f"./ranks/{server_id}.json"
     try:
         file = open(filename, 'r+')
@@ -223,10 +225,10 @@ async def on_message(message):
             user_data = json.load(file)
         except:
             user_data = {}
-    if user_id in user_data:
+    if user_id in user_data and not is_bot:
         user_data[user_id] += 1
         utils.log(f"XP user {user_id} + 1!")
-    else:
+    elif user_id not in user_data and not is_bot:
         utils.log(f"New user {user_id} added!")
         user_data[user_id] = 1
 
@@ -238,22 +240,21 @@ async def on_message(message):
 
 @bot.tree.command(name='leaderboard', description='Лидерборд активных участников')
 async def leaderboard(interaction: discord.Interaction):
-    # TODO: починить сортировку
     server_id = interaction.guild.id
     filename = f"./ranks/{server_id}.json"
-    leaderboard_data = []
     try:
         file = open(filename, 'r+')
     except IOError:
         file = open(filename, 'w+')
     with open(filename, "r+", encoding="utf-8") as file:
         try:
+            leaderboard_data = []
             user_data = json.load(file)
-            for user in user_data:
+            sorted_users = dict(sorted(user_data.items(), key=lambda item: item[1], reverse=True))
+            for user in sorted_users:
                 user_id = bot.get_user(int(user))
                 xp = user_data[user]
                 leaderboard_data.append(f"**{user_id.name}** - {xp} xp")
-            leaderboard_data.sort()
             embed = discord.Embed(title='Лидерборд активных участников',
                                   description='\n'.join(leaderboard_data),
                                   colour=discord.Color.blue())
